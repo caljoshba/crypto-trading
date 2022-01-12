@@ -3,24 +3,19 @@ use serde::{
     Serialize
 };
 
-#[derive(EnumString, Display)]
+use std::collections::HashMap;
+
+
+#[derive(EnumString, Display, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
 pub enum Pairs {
-    #[strum(serialize="XXBTZUSD")]
-    BITUSD
+    XXBTZUSD
 }
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 #[serde(default)]
 pub struct PairsResponse {
     pub error: Vec<String>,
-    pub result: Result
-}
-
-#[derive(Deserialize, Serialize, Default, Debug)]
-#[serde(default)]
-pub struct Result {
-    #[allow(non_snake_case)]
-    pub XXBTZUSD: PairResult
+    pub result: HashMap<Pairs, PairResult>
 }
 
 #[derive(Deserialize, Serialize, Default, Debug)]

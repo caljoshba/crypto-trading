@@ -9,8 +9,10 @@ use reqwest::{
 use crate::{
     types::{
         kraken::{
-            PairsResponse,
-            Pairs
+            tradeable_pairs::{
+                PairsResponse,
+                Pairs
+            }
         }
     },
     config::CONFIG
@@ -19,14 +21,13 @@ use log::{
     info
 };
 
-pub async fn get_pair_info(pair: Pairs) -> Result<PairsResponse, Error> {
+pub async fn get_pair_info(pair: &Pairs) -> Result<PairsResponse, Error> {
     let url = format!(
         "{base_url}/0/public/AssetPairs?pair={pair}",
         base_url = CONFIG.base_url,
         pair = pair
     );
 
-    println!("{}", url);
     info!("{}", url.to_string());
 
     let url = Url::parse(url.as_str()).unwrap();
@@ -37,10 +38,7 @@ pub async fn get_pair_info(pair: Pairs) -> Result<PairsResponse, Error> {
     // headers.insert();
 
     let response = client.get(url).headers(headers).send().await?;
-    // println!("{:?}", response);
-
     let pair_response: PairsResponse = response.json().await?;
-    println!("{:?}", pair_response);
 
     Ok(pair_response)
 }
