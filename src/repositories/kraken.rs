@@ -10,21 +10,30 @@ use crate::{
     types::{
         kraken::{
             tradeable_pairs::{
-                PairsResponse,
-                Pairs
+                Pair as TradePair,
+                PairResponse as TradeResponse
+            },
+            ticker::{
+                RequestPair as TickerPair,
+                PairResponse as TickerResponse
             }
         }
     },
-    config::CONFIG
+    config::{
+        CONFIG,
+        UrlKeys
+    }
 };
 use log::{
     info
 };
 
-pub async fn get_pair_info(pair: &Pairs) -> Result<PairsResponse, Error> {
+pub async fn get_pair_info(pair: &TradePair) -> Result<TradeResponse, Error> {
+    let endpoint = CONFIG.urls.get(&UrlKeys::TradePair).unwrap();
     let url = format!(
-        "{base_url}/0/public/AssetPairs?pair={pair}",
+        "{base_url}/{endpoint}?pair={pair}",
         base_url = CONFIG.base_url,
+        endpoint = endpoint,
         pair = pair
     );
 
@@ -38,7 +47,27 @@ pub async fn get_pair_info(pair: &Pairs) -> Result<PairsResponse, Error> {
     // headers.insert();
 
     let response = client.get(url).headers(headers).send().await?;
-    let pair_response: PairsResponse = response.json().await?;
+    let pair_response: TradeResponse = response.json().await?;
 
     Ok(pair_response)
+}
+
+pub async fn get_ticker_info(pair: &TickerPair) -> Result<TickerResponse, Error> {
+    let endpoint = CONFIG.urls.get(&UrlKeys::TickerPair).unwrap();
+    let url = format!(
+        "{base_url}/{endpoint}?pair={pair}",
+        base_url = CONFIG.base_url,
+        endpoint = endpoint,
+        pair = pair
+    );
+
+    info!("{}", url.to_string());
+
+    let url = Url::parse(url.as_str()).unwrap();
+    let client = Client::new();
+
+    let response = client.get(url).send().await?;
+    let ticker_response: TickerResponse = response.json().await?;
+
+    Ok(ticker_response)
 }

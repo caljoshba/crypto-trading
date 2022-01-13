@@ -7,15 +7,15 @@ use std::collections::HashMap;
 
 
 #[derive(EnumString, Display, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub enum Pairs {
+pub enum Pair {
     XXBTZUSD
 }
 
 #[derive(Deserialize, Serialize, Default, Debug)]
 #[serde(default)]
-pub struct PairsResponse {
+pub struct PairResponse {
     pub error: Vec<String>,
-    pub result: HashMap<Pairs, PairResult>
+    pub result: HashMap<Pair, PairResult>
 }
 
 #[derive(Deserialize, Serialize, Default, Debug)]
