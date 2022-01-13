@@ -25,26 +25,50 @@ pub struct PairResponse {
     pub result: HashMap<Pair, PairResult>
 }
 
+// #[derive(Deserialize, Serialize, Default, Debug)]
+// #[serde(default)]
+// /// The result of a specific asset pair
+// pub struct PairResult {
+//     /// the most recent ask: [ <price>, <whole lot volume>, <lot volume> ]
+//     pub a: Vec<(String, String, String)>,
+//     /// the most recent bid: [ <price>, <whole lot volume>, <lot volume> ]
+//     pub b: Vec<(String, String, String)>,
+//     /// the last trade closed: [ <price>, <lot volume> ]
+//     pub c: Vec<(String, String)>,
+//     /// the volume: [ <today>, <last 24 hours> ]
+//     pub v: Vec<(String, String)>,
+//     /// the volume weighted average price: [ <today>, <last 24 hours> ]
+//     pub p: Vec<(String, String)>,
+//     /// the number of trades: [ <today>, <last 24 hours> ]
+//     pub t: Vec<(u32, u32)>,
+//     /// the lowest value: [ <today>, <last 24 hours> ]
+//     pub l: Vec<(String, String)>,
+//     /// the highest value: [ <today>, <last 24 hours> ]
+//     pub h: Vec<(String, String)>,
+//     /// today's opening price
+//     pub o: String,
+// }
+
 #[derive(Deserialize, Serialize, Default, Debug)]
 #[serde(default)]
 /// The result of a specific asset pair
 pub struct PairResult {
     /// the most recent ask: [ <price>, <whole lot volume>, <lot volume> ]
-    pub a: Vec<(String, String, String)>,
+    pub a: Vec<String>,
     /// the most recent bid: [ <price>, <whole lot volume>, <lot volume> ]
-    pub b: Vec<(String, String, String)>,
+    pub b: Vec<String>,
     /// the last trade closed: [ <price>, <lot volume> ]
-    pub c: Vec<(String, String)>,
+    pub c: Vec<String>,
     /// the volume: [ <today>, <last 24 hours> ]
-    pub v: Vec<(String, String)>,
+    pub v: Vec<String>,
     /// the volume weighted average price: [ <today>, <last 24 hours> ]
-    pub p: Vec<(String, String)>,
+    pub p: Vec<String>,
     /// the number of trades: [ <today>, <last 24 hours> ]
-    pub t: Vec<(u32, u32)>,
+    pub t: Vec<u32>,
     /// the lowest value: [ <today>, <last 24 hours> ]
-    pub l: Vec<(String, String)>,
+    pub l: Vec<String>,
     /// the highest value: [ <today>, <last 24 hours> ]
-    pub h: Vec<(String, String)>,
+    pub h: Vec<String>,
     /// today's opening price
     pub o: String,
 }

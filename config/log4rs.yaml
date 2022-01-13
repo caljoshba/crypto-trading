@@ -15,12 +15,12 @@ root:
     - file
 
 
-loggers: 
-  app:backend::db:
-    level: info
-  app:file:
-    level: info
-    appenders:
-      - file
-    additive: false
+# loggers: 
+#   app:backend::db:
+#     level: info
+#   app:file:
+#     level: info
+#     appenders:
+#       - file
+#     additive: false
     
