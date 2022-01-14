@@ -8,7 +8,6 @@ use futures_util::{
     SinkExt
 };
 use serde::{
-    Deserialize,
     Serialize
 };
 use crate::{
@@ -17,19 +16,20 @@ use crate::{
             ResponseTypes,
             StatusResponse,
             SubscriptionStatusResponse,
-            TickerResponse
+            TickerResponse,
+            Heartbeat
         }
     }
 };
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Debug)]
 struct EventMessage<'t> {
     event: &'t str,
     pair: Vec<&'t str>,
     subscription: Subscription<'t>
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+#[derive(Serialize, Debug, Clone, Copy)]
 struct Subscription<'t> {
     name: &'t str
 }
@@ -85,12 +85,9 @@ fn process_event(message: Message) {
     match response {
         ResponseTypes::StatusResponse(status) => { process_status_event(status) },
         ResponseTypes::SubscriptionStatusResponse(status) => { process_subscription_event(status) },
-        ResponseTypes::TickerResponse(ticker_response) => { process_ticker(ticker_response) }
+        ResponseTypes::TickerResponse(ticker_response) => { process_ticker_event(ticker_response) },
+        ResponseTypes::Heartbeat(heartbeat) => { process_heartbeat_event(heartbeat) }
     }
-    // match response {
-    //     ResponseTypes::StatusResponse => { process_status_event(status) },
-    //     ResponseTypes::TickerResponse => { process_ticker(ticker_response) }
-    // }
 }
 
 fn process_status_event(status: StatusResponse) {
@@ -101,7 +98,12 @@ fn process_subscription_event(status: SubscriptionStatusResponse) {
     println!("{:?}", status);
 }
 
-fn process_ticker(mut response: TickerResponse) {
-    let ticker = response.remove(1);
-    println!("{:?}", ticker);
+fn process_ticker_event(response: TickerResponse) {
+    // let ticker = response.ticker.remove(1);
+    // let ticker = response.ticker.1;
+    println!("{:?}", response);
+}
+
+fn process_heartbeat_event(heartbeat: Heartbeat) {
+    println!("{:?}", heartbeat);
 }
