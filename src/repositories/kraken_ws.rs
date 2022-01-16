@@ -17,10 +17,13 @@ use crate::{
             StatusResponse,
             SubscriptionStatusResponse,
             TickerResponse,
-            Heartbeat
-        }
+            Heartbeat,
+            PairResult
+        },
+        trades::Trades
     }
 };
+use std::sync::Mutex;
 
 #[derive(Serialize, Debug)]
 struct EventMessage<'t> {
@@ -52,9 +55,8 @@ impl<'t> Subscription<'t> {
     }
 }
 
-
-
 pub async fn open_connection() -> bool {
+    let trades_state: Mutex<Trades> = Mutex::new(Trades::new());
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
     let (mut write, read) = ws_stream.split();
@@ -69,7 +71,10 @@ pub async fn open_connection() -> bool {
 
     let read_future = read.for_each(|message| async {
         let data = message.unwrap();
-        process_event(data);
+        let value: Option<PairResult> = process_event(data);
+        trades_state.lock().unwrap().append(value);
+        println!("{:?}", &trades_state);
+        // *trades.append(value);
     });
     
     write.send(Message::text(serde_json::to_string(&unsubscribe_payload).unwrap())).await.unwrap();
@@ -78,7 +83,7 @@ pub async fn open_connection() -> bool {
     true
 }
 
-fn process_event(message: Message) {
+fn process_event(message: Message) -> Option<PairResult> {
     println!("{}", message);
     let response: ResponseTypes = serde_json::from_str(message.to_text().unwrap()).unwrap();
     // println!("{:?}", response);
@@ -90,20 +95,24 @@ fn process_event(message: Message) {
     }
 }
 
-fn process_status_event(status: StatusResponse) {
+fn process_status_event(status: StatusResponse) -> Option<PairResult> {
     println!("{:?}", status);
+    None
 }
 
-fn process_subscription_event(status: SubscriptionStatusResponse) {
+fn process_subscription_event(status: SubscriptionStatusResponse) -> Option<PairResult> {
     println!("{:?}", status);
+    None
 }
 
-fn process_ticker_event(response: TickerResponse) {
+fn process_ticker_event(response: TickerResponse) -> Option<PairResult> {
     // let ticker = response.ticker.remove(1);
     // let ticker = response.ticker.1;
     println!("{:?}", response);
+    Some(response.ticker)
 }
 
-fn process_heartbeat_event(heartbeat: Heartbeat) {
+fn process_heartbeat_event(heartbeat: Heartbeat) -> Option<PairResult> {
     println!("{:?}", heartbeat);
+    None
 }

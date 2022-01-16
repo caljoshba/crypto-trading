@@ -1,15 +1,15 @@
 use std::env;
 use std::collections::HashMap;
-use crate::types::{
-    kraken::{
-        ticker::{
-            Pair as TickerPair
-        },
-        tradeable_pairs::{
-            Pair as TradePair
-        }
-    }
-};
+// use crate::types::{
+    // kraken::{
+        // ticker::{
+        //     Pair as TickerPair
+        // },
+        // tradeable_pairs::{
+        //     Pair as TradePair
+        // }
+//     }
+// };
 
 lazy_static! {
     pub static ref CONFIG: Config = Config::new();
