@@ -18,7 +18,8 @@ use crate::{
             SubscriptionStatusResponse,
             TickerResponse,
             Heartbeat,
-            PairResult
+            Pair,
+            response::PairResult,
         },
         trades::Trades
     }
@@ -56,12 +57,11 @@ impl<'t> Subscription<'t> {
 }
 
 pub async fn open_connection() -> bool {
-    let trades_state: Mutex<Trades> = Mutex::new(Trades::new());
+    let trades_state: Mutex<Trades> = Mutex::new(Trades::new(Pair::XBTEUR));
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
     let (mut write, read) = ws_stream.split();
 
-    // let pairs_to_subscribe = vec!("XBT/EUR");
     let subscription = Subscription::new("ticker");
 
     let payload = EventMessage::new("subscribe", vec!("XBT/EUR"), subscription);
@@ -74,7 +74,6 @@ pub async fn open_connection() -> bool {
         let value: Option<PairResult> = process_event(data);
         trades_state.lock().unwrap().append(value);
         println!("{:?}", &trades_state);
-        // *trades.append(value);
     });
     
     write.send(Message::text(serde_json::to_string(&unsubscribe_payload).unwrap())).await.unwrap();
@@ -86,7 +85,7 @@ pub async fn open_connection() -> bool {
 fn process_event(message: Message) -> Option<PairResult> {
     println!("{}", message);
     let response: ResponseTypes = serde_json::from_str(message.to_text().unwrap()).unwrap();
-    // println!("{:?}", response);
+
     match response {
         ResponseTypes::StatusResponse(status) => { process_status_event(status) },
         ResponseTypes::SubscriptionStatusResponse(status) => { process_subscription_event(status) },
@@ -106,8 +105,6 @@ fn process_subscription_event(status: SubscriptionStatusResponse) -> Option<Pair
 }
 
 fn process_ticker_event(response: TickerResponse) -> Option<PairResult> {
-    // let ticker = response.ticker.remove(1);
-    // let ticker = response.ticker.1;
     println!("{:?}", response);
     Some(response.ticker)
 }

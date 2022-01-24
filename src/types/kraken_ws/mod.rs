@@ -1,3 +1,5 @@
+pub mod response;
+
 use serde::{
     Deserialize,
     Serialize
@@ -11,29 +13,6 @@ pub enum Pair {
 
 impl Default for Pair {
     fn default() -> Self { Pair::XBTEUR }
-}
-
-#[derive(Deserialize, Debug)]
-/// The result of a specific asset pair
-pub struct PairResult {
-    /// the most recent ask: [ <price>, <whole lot volume>, <lot volume> ]
-    pub a: (String, u16, String),
-    /// the most recent bid: [ <price>, <whole lot volume>, <lot volume> ]
-    pub b: (String, u16, String),
-    /// the last trade closed: [ <price>, <lot volume> ]
-    pub c: (String, String),
-    /// the volume: [ <today>, <last 24 hours> ]
-    pub v: (String, String),
-    /// the volume weighted average price: [ <today>, <last 24 hours> ]
-    pub p: (String, String),
-    /// the number of trades: [ <today>, <last 24 hours> ]
-    pub t: (u32, u32),
-    /// the lowest value: [ <today>, <last 24 hours> ]
-    pub l: (String, String),
-    /// the highest value: [ <today>, <last 24 hours> ]
-    pub h: (String, String),
-    /// today's opening price
-    pub o: (String, String),
 }
 
 #[derive(EnumString, Display, Debug, Deserialize)]
@@ -97,7 +76,7 @@ pub struct StatusResponse {
 #[serde(expecting = "expecting [<channel_id>, <ticker>, <subscription_name>, <pair>] array")]
 pub struct TickerResponse {
     pub channel_id: u16,
-    pub ticker: PairResult,
+    pub ticker: response::PairResult,
     pub subscription_name: String,
     pub pair: Pair,
 }
