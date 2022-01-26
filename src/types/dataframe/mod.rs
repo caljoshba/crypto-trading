@@ -8,35 +8,6 @@ pub mod row;
 // use std::rc::{ Rc, Weak };
 // use std::cell::RefCell;
 
-// #[derive(Debug)]
-// struct Cell {
-//     row: Rc<Row>,
-//     value: u16
-// }
-// #[derive(Debug)]
-// struct Row {
-//     value: u16,
-//     cells: RefCell<Vec<Weak<Cell>>>
-// }
-
-// impl Cell {
-//     fn new(row: Rc<Row>, value: u16) -> Self {
-//         Self {
-//             row,
-//             value
-//         }
-//     }
-// }
-
-// impl Row {
-//     fn new(value: u16) -> Self {
-//         Self {
-//             value,
-//             cells: RefCell::new(vec![])
-//         }
-//     }
-// }
-
 // fn main() {
 //     let mut c1: Vec<Rc<Cell>> = Vec::new();
 //     let mut c2: Vec<Rc<Cell>> = Vec::new();

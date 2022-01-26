@@ -12,6 +12,13 @@ use serde::{
 };
 use crate::{
     types::{
+        dataframe::{
+            row::Row,
+            cell::{
+                Cell,
+                // SelectRow
+            },
+        },
         kraken_ws::{
             ResponseTypes,
             StatusResponse,
@@ -25,6 +32,7 @@ use crate::{
     }
 };
 use std::sync::Mutex;
+use std::rc::{ Rc };
 
 #[derive(Serialize, Debug)]
 struct EventMessage<'t> {
@@ -58,6 +66,11 @@ impl<'t> Subscription<'t> {
 
 pub async fn open_connection() -> bool {
     let trades_state: Mutex<Trades> = Mutex::new(Trades::new(Pair::XBTEUR));
+    // let row: Rc<Row<Cell<_>> = Rc::new(Row::new(1));
+    let row: Rc<Row<Cell<u16>>> = Rc::new(Row::new(1));
+
+
+
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
     let (mut write, read) = ws_stream.split();
@@ -80,6 +93,12 @@ pub async fn open_connection() -> bool {
 
     read_future.await;
     true
+}
+
+fn create_cells(data: Option<PairResult>, row: &Rc<Row<u16>>) {
+    if let Some(pair) = data {
+        let ask_price = Rc::new(Cell::<f64>::new(Rc::clone(row), pair.a.ask_price));
+    }
 }
 
 fn process_event(message: Message) -> Option<PairResult> {
