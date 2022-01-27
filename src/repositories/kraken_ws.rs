@@ -13,6 +13,7 @@ use serde::{
 use crate::{
     types::{
         dataframe::{
+            // column::Column,
             row::Row,
             cell::{
                 Cell,
@@ -66,10 +67,8 @@ impl<'t> Subscription<'t> {
 
 pub async fn open_connection() -> bool {
     let trades_state: Mutex<Trades> = Mutex::new(Trades::new(Pair::XBTEUR));
-    // let row: Rc<Row<Cell<_>> = Rc::new(Row::new(1));
-    let row: Rc<Row<Cell<u16>>> = Rc::new(Row::new(1));
-
-
+    let row = Rc::new(Row::new(1));
+    // let column: Column<f64> = Column::new();
 
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
@@ -85,7 +84,17 @@ pub async fn open_connection() -> bool {
     let read_future = read.for_each(|message| async {
         let data = message.unwrap();
         let value: Option<PairResult> = process_event(data);
-        trades_state.lock().unwrap().append(value);
+        // trades_state.lock().unwrap().append(&value);
+        // create_cells(value, &column);
+        // create_cells(value, &row);
+        if let Some(pair) = value {
+            let ask_whole_volume: Rc<Cell<u16, u16>> = Rc::new(Cell::new(Rc::clone(&row), pair.a.ask_whole_volume));
+            row.add_cell(&ask_whole_volume);
+            let trades_today: Rc<Cell<u16, u32>> = Rc::new(Cell::new(Rc::clone(&row), pair.t.trades_today));
+            row.add_cell(&ask_whole_volume);
+            // row.add_cell(&ask_price);
+        }
+        
         println!("{:?}", &trades_state);
     });
     
@@ -95,11 +104,26 @@ pub async fn open_connection() -> bool {
     true
 }
 
-fn create_cells(data: Option<PairResult>, row: &Rc<Row<u16>>) {
-    if let Some(pair) = data {
-        let ask_price = Rc::new(Cell::<f64>::new(Rc::clone(row), pair.a.ask_price));
-    }
-}
+// fn create_cells(data: Option<PairResult>, column: &Column<f64>) {
+//     if let Some(pair) = data {
+//         // let ask_price: Rc<Cell<f64>> = Rc::new(Cell::<f64>::new(Rc::clone(row), pair.a.ask_price));
+//         // row.add_cell(&ask_price);
+//     } else {
+
+//     }
+// }
+
+// fn create_cells(data: Option<PairResult>, row: &Rc<Row<Cell<u16, u16>>>) {
+//     if let Some(pair) = data {
+//         let ask_whole_volume: Rc<Cell<u16, u16>> = Rc::new(Cell::new(Rc::clone(row), pair.a.ask_whole_volume));
+//         row.add_cell(&ask_whole_volume);
+//         let trades_today: Rc<Cell<u16, u32>> = Rc::new(Cell::new(Rc::clone(row), pair.t.trades_today));
+//         row.add_cell(&ask_whole_volume);
+//         // row.add_cell(&ask_price);
+//     } else {
+
+//     }
+// }
 
 fn process_event(message: Message) -> Option<PairResult> {
     println!("{}", message);

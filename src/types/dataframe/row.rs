@@ -1,12 +1,14 @@
 use std::rc::{ Rc, Weak };
 use std::cell::RefCell;
+// use std::hash::Hash;
 use crate::types::dataframe::cell::{
-    SelectRow
+    SelectRow,
+    // Cell
 };
 
 
 
-#[derive(Debug)]
+// // #[derive(Debug)]
 pub struct Row<T: SelectRow> {
     index: u16,
     cells: RefCell<Vec<Weak<T>>>
@@ -21,7 +23,7 @@ where T: SelectRow {
         }
     }
 
-    pub fn addCell(&mut self, cell: &Rc<T>) {
+    pub fn add_cell(&mut self, cell: &Rc<T>) where T: SelectRow {
         self.cells.borrow_mut().push(Rc::downgrade(cell));
     }
 }
