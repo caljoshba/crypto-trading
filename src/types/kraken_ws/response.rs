@@ -4,6 +4,7 @@ use serde::{
     Deserializer
 };
 use std::str::FromStr;
+use dataframe::cell::types::datatypes::AnyType;
 
 #[derive(Deserialize, Debug)]
 /// The result of a specific asset pair
@@ -26,6 +27,53 @@ pub struct PairResult {
     pub h: Highest,
     /// today's opening price
     pub o: Opening,
+}
+
+impl PairResult {
+    pub fn column_names() -> Vec<&'static str> {
+        vec![
+            "ask_price",
+            "ask_whole_volume",
+            "ask_volume",
+            "bid_price",
+            "bid_whole_volume",
+            "bid_volume",
+            "closed_price",
+            "closed_volume",
+            "volume_today",
+            "volume_24_hours",
+            "price_today",
+            "price_24_hours",
+            "lowest_today",
+            "lowest_24_hours",
+            "highest_today",
+            "highest_24_hours",
+            "opening_today",
+            "opening_yesterday"
+        ]
+    }
+
+    pub fn values_as_vec(&self) -> Vec<AnyType> {
+        vec![
+            self.a.ask_price.into(),
+            self.a.ask_whole_volume.into(),
+            self.a.ask_volume.into(),
+            self.b.bid_price.into(),
+            self.b.bid_whole_volume.into(),
+            self.c.closed_price.into(),
+            self.c.closed_volume.into(),
+            self.v.volume_today.into(),
+            self.v.volume_24_hours.into(),
+            self.p.price_today.into(),
+            self.p.price_24_hours.into(),
+            self.l.lowest_today.into(),
+            self.l.lowest_24_hours.into(),
+            self.h.highest_today.into(),
+            self.h.highest_24_hours.into(),
+            self.o.opening_today.into(),
+            self.o.opening_yesterday.into()
+        ]
+    }
 }
 
 fn de_from_str<'de, D>(deserializer: D) -> Result<f64, D::Error>
