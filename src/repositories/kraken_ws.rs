@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code)]
 use tokio_tungstenite::{
     connect_async,
     tungstenite::Message
@@ -64,7 +65,7 @@ impl<'t> Subscription<'t> {
 pub async fn open_connection() -> bool {
     let column_names: Vec<&str> = PairResult::column_names();
     let dataframe = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names))));
-    dataframe.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(5)));
+    dataframe.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(10)));
 
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
