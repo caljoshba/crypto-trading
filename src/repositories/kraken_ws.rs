@@ -31,8 +31,12 @@ use dataframe::{
     cell::types::datatypes::AnyType,
     column::RollingMean,
 };
+use plotlib::page::Page;
+use plotlib::repr::Plot;
+use plotlib::view::ContinuousView;
+use plotlib::style::{PointMarker, PointStyle};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 struct EventMessage<'t> {
     event: &'t str,
     pair: Vec<&'t str>,
@@ -74,7 +78,7 @@ pub async fn open_connection() -> bool {
     let subscription = Subscription::new("ticker");
 
     let payload = EventMessage::new("subscribe", vec!("XBT/EUR"), subscription);
-    // let unsubscribe_payload = EventMessage::new("unsubscribe", vec!("XBT/EUR"), subscription);
+    let unsubscribe_payload = EventMessage::new("unsubscribe", vec!("XBT/EUR"), subscription);
 
     write.send(Message::text(serde_json::to_string(&payload).unwrap())).await.unwrap();
 
@@ -132,11 +136,32 @@ fn process_heartbeat_event(heartbeat: Heartbeat) -> Option<PairResult> {
 
 fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>) {
     let row = Rc::clone(&dataframe.lock().unwrap().borrow().get_rows()[row_index]);
-    let cells = row.borrow();
-    for cell_option in cells.get_cells().iter() {
-        if let Some(cell) = cell_option.upgrade() {
-            println!("{:?}", cell);
+    // let cells = row.borrow();
+    // for cell_option in cells.get_cells().iter() {
+    //     if let Some(cell) = cell_option.upgrade() {
+    //         println!("{:?}", cell);
+    //     }
+    // }
+    let row_index: usize = row.borrow().index;
+    println!("{}", &row_index);
+    if row_index > 99 && row_index % 100 == 0 {
+        let return_values: Vec<(i64, f64)> = dataframe.lock().unwrap().borrow().get_column_values_with_unix_datetime::<f64>("bid_price_returns");
+        println!("{:?}", return_values);
+        let mut plot_values: Vec<(f64, f64)> = vec![];
+        for value in return_values.iter() {
+            plot_values.push((value.0 as f64, value.1));
         }
+        let plot = Plot::new(plot_values).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Cross) // setting the marker to be a square
+                .colour("#DD3355"),
+        );
+        let view = ContinuousView::new()
+            .add(plot)
+            .y_range(-15., 15.)
+            .x_label("unix timestamp")
+            .y_label("returns");
+        Page::single(&view).save("/output/scatter.svg").unwrap();
     }
     // println!("{:?}", cells.get_last_cell());
     // let returns = row.borrow().get_cells().iter().last();
