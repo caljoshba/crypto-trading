@@ -17,6 +17,6 @@ log4rs = "1.0.0"
 tokio = { version = "1.15.0", features = [ "full" ] }
 tokio-tungstenite = { version = "0.16.1", features=["native-tls"] }
 futures-util = "0.3.19"
-dataframe = { path = "../personal/dataframe", version = "0.1.0" }
+dataframe = { path = "../dataframe", version = "0.1.0" }
 chrono = { version = "0.4.19" }
 plotlib = { version = "0.5.1" }

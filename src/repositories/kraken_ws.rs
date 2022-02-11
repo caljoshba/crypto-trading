@@ -68,8 +68,12 @@ impl<'t> Subscription<'t> {
 
 pub async fn open_connection() -> bool {
     let column_names: Vec<&str> = PairResult::column_names();
-    let dataframe = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names))));
+    let dataframe = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names.clone()))));
     dataframe.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(10)));
+    let dataframe2 = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names.clone()))));
+    dataframe2.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(15)));
+    let dataframe3 = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names))));
+    dataframe3.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(20)));
 
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
@@ -85,13 +89,18 @@ pub async fn open_connection() -> bool {
     // https://docs.rs/futures/0.1.23/futures/stream/trait.Stream.html#method.fold
     // https://stackoverflow.com/questions/62557219/error-on-future-generator-closure-captured-variable-cannot-escape-fnmut-closu
 
-    let read_future = read.fold(Rc::clone(&dataframe), |acc, message| async {
+    let read_future = read.fold(vec![Rc::clone(&dataframe), Rc::clone(&dataframe2), Rc::clone(&dataframe3)], |acc, message| async {
         let data = message.unwrap();
         let value: Option<PairResult> = process_event(data);
         if let Some(pair) = value {
             let row_values: Vec<AnyType> = pair.values_as_vec();
-            let row_index: usize = acc.lock().unwrap().borrow_mut().add_row(row_values);
-            analyse_row_added(row_index, Rc::clone(&acc));
+            println!("{:?}", row_values);
+            let row_index: usize = acc[0].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            acc[1].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            acc[2].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            analyse_row_added(row_index, Rc::clone(&acc[0]), "./output/scatter_10.svg");
+            analyse_row_added(row_index, Rc::clone(&acc[1]), "./output/scatter_15.svg");
+            analyse_row_added(row_index, Rc::clone(&acc[2]), "./output/scatter_20.svg");
         }
         // println!("{:?}", acc);
         acc
@@ -134,19 +143,13 @@ fn process_heartbeat_event(heartbeat: Heartbeat) -> Option<PairResult> {
     None
 }
 
-fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>) {
+fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>, scatter_output: &'static str) {
     let row = Rc::clone(&dataframe.lock().unwrap().borrow().get_rows()[row_index]);
-    // let cells = row.borrow();
-    // for cell_option in cells.get_cells().iter() {
-    //     if let Some(cell) = cell_option.upgrade() {
-    //         println!("{:?}", cell);
-    //     }
-    // }
     let row_index: usize = row.borrow().index;
     println!("{}", &row_index);
+
     if row_index > 99 && row_index % 100 == 0 {
-        let return_values: Vec<(i64, f64)> = dataframe.lock().unwrap().borrow().get_column_values_with_unix_datetime::<f64>("bid_price_returns");
-        println!("{:?}", return_values);
+        let return_values: Vec<(i64, f64)> = dataframe.lock().unwrap().borrow().get_rolling_means_as_vec_with_unix_datetime_diff::<f64>("bid_price_returns");
         let mut plot_values: Vec<(f64, f64)> = vec![];
         for value in return_values.iter() {
             plot_values.push((value.0 as f64, value.1));
@@ -159,13 +162,8 @@ fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>)
         let view = ContinuousView::new()
             .add(plot)
             .y_range(-15., 15.)
-            .x_label("unix timestamp")
+            .x_label("seconds")
             .y_label("returns");
-        Page::single(&view).save("/output/scatter.svg").unwrap();
-    }
-    // println!("{:?}", cells.get_last_cell());
-    // let returns = row.borrow().get_cells().iter().last();
-    // if let Some(returns) = cells.iter().last() {
-    //     println!("{:?}", returns.upgrade());
-    // }    
+        Page::single(&view).save(scatter_output).unwrap();
+    }  
 }
