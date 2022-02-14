@@ -11,6 +11,7 @@ services:
       - ./config:/code/config
       - ./Cargo.lock:/code/Cargo.lock
       - ./Cargo.toml:/code/Cargo.toml
+      - ../personal:/personal
     ports:
       - 8090:8090
     environment:

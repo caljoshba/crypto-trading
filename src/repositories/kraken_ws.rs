@@ -1,3 +1,4 @@
+#![allow(unused_variables, dead_code)]
 use tokio_tungstenite::{
     connect_async,
     tungstenite::Message
@@ -18,15 +19,24 @@ use crate::{
             SubscriptionStatusResponse,
             TickerResponse,
             Heartbeat,
-            Pair,
             response::PairResult,
         },
-        trades::Trades
     }
 };
 use std::sync::Mutex;
+use std::rc::{ Rc };
+use std::cell::RefCell;
+use dataframe::{
+    frame::DataFrame,
+    cell::types::datatypes::AnyType,
+    column::RollingMean,
+};
+use plotlib::page::Page;
+use plotlib::repr::Plot;
+use plotlib::view::ContinuousView;
+use plotlib::style::{PointMarker, PointStyle};
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 struct EventMessage<'t> {
     event: &'t str,
     pair: Vec<&'t str>,
@@ -57,7 +67,14 @@ impl<'t> Subscription<'t> {
 }
 
 pub async fn open_connection() -> bool {
-    let trades_state: Mutex<Trades> = Mutex::new(Trades::new(Pair::XBTEUR));
+    let column_names: Vec<&str> = PairResult::column_names();
+    let dataframe = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names.clone()))));
+    dataframe.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(10)));
+    let dataframe2 = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names.clone()))));
+    dataframe2.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(15)));
+    let dataframe3 = Rc::new(Mutex::new(RefCell::new(DataFrame::new(column_names))));
+    dataframe3.lock().unwrap().borrow_mut().create_returns_for_column("bid_price", "bid_price_returns", RollingMean::new(true, Some(20)));
+
     let url = Url::parse("wss://ws.kraken.com").unwrap(); // Get the URL
     let (ws_stream, _) = connect_async(url).await.expect("Failed to connect to the websocket"); // Connect to the server
     let (mut write, read) = ws_stream.split();
@@ -69,21 +86,33 @@ pub async fn open_connection() -> bool {
 
     write.send(Message::text(serde_json::to_string(&payload).unwrap())).await.unwrap();
 
-    let read_future = read.for_each(|message| async {
+    // https://docs.rs/futures/0.1.23/futures/stream/trait.Stream.html#method.fold
+    // https://stackoverflow.com/questions/62557219/error-on-future-generator-closure-captured-variable-cannot-escape-fnmut-closu
+
+    let read_future = read.fold(vec![Rc::clone(&dataframe), Rc::clone(&dataframe2), Rc::clone(&dataframe3)], |acc, message| async {
         let data = message.unwrap();
         let value: Option<PairResult> = process_event(data);
-        trades_state.lock().unwrap().append(value);
-        println!("{:?}", &trades_state);
+        if let Some(pair) = value {
+            let row_values: Vec<AnyType> = pair.values_as_vec();
+            println!("{:?}", row_values);
+            let row_index: usize = acc[0].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            acc[1].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            acc[2].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            analyse_row_added(row_index, Rc::clone(&acc[0]), "./output/scatter_10.svg");
+            analyse_row_added(row_index, Rc::clone(&acc[1]), "./output/scatter_15.svg");
+            analyse_row_added(row_index, Rc::clone(&acc[2]), "./output/scatter_20.svg");
+        }
+        // println!("{:?}", acc);
+        acc
     });
     
-    write.send(Message::text(serde_json::to_string(&unsubscribe_payload).unwrap())).await.unwrap();
-
+    // write.send(Message::text(serde_json::to_string(&unsubscribe_payload).unwrap())).await.unwrap();
     read_future.await;
     true
 }
 
 fn process_event(message: Message) -> Option<PairResult> {
-    println!("{}", message);
+    // println!("{}", message);
     let response: ResponseTypes = serde_json::from_str(message.to_text().unwrap()).unwrap();
 
     match response {
@@ -95,21 +124,46 @@ fn process_event(message: Message) -> Option<PairResult> {
 }
 
 fn process_status_event(status: StatusResponse) -> Option<PairResult> {
-    println!("{:?}", status);
+    // println!("{:?}", status);
     None
 }
 
 fn process_subscription_event(status: SubscriptionStatusResponse) -> Option<PairResult> {
-    println!("{:?}", status);
+    // println!("{:?}", status);
     None
 }
 
 fn process_ticker_event(response: TickerResponse) -> Option<PairResult> {
-    println!("{:?}", response);
+    // println!("{:?}", response);
     Some(response.ticker)
 }
 
 fn process_heartbeat_event(heartbeat: Heartbeat) -> Option<PairResult> {
-    println!("{:?}", heartbeat);
+    // println!("{:?}", heartbeat);
     None
+}
+
+fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>, scatter_output: &'static str) {
+    let row = Rc::clone(&dataframe.lock().unwrap().borrow().get_rows()[row_index]);
+    let row_index: usize = row.borrow().index;
+    println!("{}", &row_index);
+
+    if row_index > 99 && row_index % 100 == 0 {
+        let return_values: Vec<(i64, f64)> = dataframe.lock().unwrap().borrow().get_rolling_means_as_vec_with_unix_datetime_diff::<f64>("bid_price_returns");
+        let mut plot_values: Vec<(f64, f64)> = vec![];
+        for value in return_values.iter() {
+            plot_values.push((value.0 as f64, value.1));
+        }
+        let plot = Plot::new(plot_values).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Cross) // setting the marker to be a square
+                .colour("#DD3355"),
+        );
+        let view = ContinuousView::new()
+            .add(plot)
+            .y_range(-15., 15.)
+            .x_label("seconds")
+            .y_label("returns");
+        Page::single(&view).save(scatter_output).unwrap();
+    }  
 }
