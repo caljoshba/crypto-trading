@@ -13,6 +13,12 @@ The returns are then printed as a graph in the `output` folder for every 100 pri
 ## Running the app
 Ensure you have the [rust toolchain installed](https://www.rust-lang.org/tools/install) and then run:
 
-  `cargo run`
+    cargo run
   
 This will build an run your application
+
+Alternatively, you can run this inside docker:
+
+    docker-compose up
+
+Then `Ctrl + C` when you've had enough
