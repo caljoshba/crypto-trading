@@ -7,8 +7,10 @@ This utilises my homebrewed [dataframe](https://github.com/caljoshba/dataframe/t
 This connects to the Kraken WebSocket API to pull the latest trading information for BTC/EUR.
 This converts the response to a struct using [serde_json](https://docs.rs/serde_json/0.9.0-rc2/serde_json/) and is then loaded into the custom dataframe.
 
-The returns for each value is then calculated and a rolling mean applied over the last 20 values to provide some stability to the price and to discern a pattern, otherwise the price fluctuates too much and looks completely random.
+The returns for each value is then calculated and a rolling mean applied over the last 10, 15 or 20 values to provide some stability to the price and to discern a pattern, otherwise the price fluctuates too much and looks completely random.
 The returns are then printed as a graph in the `output` folder for every 100 price events we get from the Kraken API.
+
+The red crosses show the rolling mean, the green circles show the rate of change of the price.
 
 ## Running the app
 Ensure you have the [rust toolchain installed](https://www.rust-lang.org/tools/install) and then run:
@@ -21,4 +23,4 @@ Alternatively, you can run this inside docker:
 
     docker-compose up
 
-Then `Ctrl + C` when you've had enough
+Then `Ctrl + C` when you've had enough (you need to have added at least 100 rows to the dataframe before any svgs are created).
