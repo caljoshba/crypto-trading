@@ -102,7 +102,6 @@ pub async fn open_connection() -> bool {
             analyse_row_added(row_index, Rc::clone(&acc[1]), "./output/scatter_15.svg");
             analyse_row_added(row_index, Rc::clone(&acc[2]), "./output/scatter_20.svg");
         }
-        // println!("{:?}", acc);
         acc
     });
     
