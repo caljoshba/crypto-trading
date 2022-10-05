@@ -9,10 +9,9 @@ services:
       - ./src:/code/src
       - ./log:/code/log
       - ./config:/code/config
+      - ./output:/code/output
       - ./Cargo.lock:/code/Cargo.lock
       - ./Cargo.toml:/code/Cargo.toml
-      - ../personal:/personal
-    ports:
-      - 8090:8090
+      - ../dataframe:/dataframe
     environment:
       - RUST_BACKTRACE=1

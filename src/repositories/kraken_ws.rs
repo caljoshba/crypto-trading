@@ -94,10 +94,12 @@ pub async fn open_connection() -> bool {
         let value: Option<PairResult> = process_event(data);
         if let Some(pair) = value {
             let row_values: Vec<AnyType> = pair.values_as_vec();
+            
             println!("{:?}", row_values);
             let row_index: usize = acc[0].lock().unwrap().borrow_mut().add_row(row_values.clone());
             acc[1].lock().unwrap().borrow_mut().add_row(row_values.clone());
             acc[2].lock().unwrap().borrow_mut().add_row(row_values.clone());
+            println!("adding row number: {}", &row_index);
             analyse_row_added(row_index, Rc::clone(&acc[0]), "./output/scatter_10.svg");
             analyse_row_added(row_index, Rc::clone(&acc[1]), "./output/scatter_15.svg");
             analyse_row_added(row_index, Rc::clone(&acc[2]), "./output/scatter_20.svg");
@@ -145,7 +147,6 @@ fn process_heartbeat_event(heartbeat: Heartbeat) -> Option<PairResult> {
 fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>, scatter_output: &'static str) {
     let row = Rc::clone(&dataframe.lock().unwrap().borrow().get_rows()[row_index]);
     let row_index: usize = row.borrow().index;
-    println!("{}", &row_index);
 
     if row_index > 99 && row_index % 100 == 0 {
         let (return_values, rate_of_change): (Vec<(f64, f64)>, Vec<(f64, f64)>) = dataframe.lock().unwrap().borrow().get_rolling_means_as_vec_with_unix_datetime_diff::<f64>("bid_price_returns", 5);
