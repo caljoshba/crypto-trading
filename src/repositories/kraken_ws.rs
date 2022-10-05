@@ -104,7 +104,6 @@ pub async fn open_connection() -> bool {
             analyse_row_added(row_index, Rc::clone(&acc[1]), "./output/scatter_15.svg");
             analyse_row_added(row_index, Rc::clone(&acc[2]), "./output/scatter_20.svg");
         }
-        // println!("{:?}", acc);
         acc
     });
     
@@ -150,19 +149,20 @@ fn analyse_row_added(row_index: usize, dataframe: Rc<Mutex<RefCell<DataFrame>>>,
     let row_index: usize = row.borrow().index;
 
     if row_index > 99 && row_index % 100 == 0 {
-        println!("outputting results to graph at {}", &scatter_output);
-        let return_values: Vec<(i64, f64)> = dataframe.lock().unwrap().borrow().get_rolling_means_as_vec_with_unix_datetime_diff::<f64>("bid_price_returns");
-        let mut plot_values: Vec<(f64, f64)> = vec![];
-        for value in return_values.iter() {
-            plot_values.push((value.0 as f64, value.1));
-        }
-        let plot = Plot::new(plot_values).point_style(
+        let (return_values, rate_of_change): (Vec<(f64, f64)>, Vec<(f64, f64)>) = dataframe.lock().unwrap().borrow().get_rolling_means_as_vec_with_unix_datetime_diff::<f64>("bid_price_returns", 5);
+        let plot = Plot::new(return_values).point_style(
             PointStyle::new()
                 .marker(PointMarker::Cross) // setting the marker to be a square
                 .colour("#DD3355"),
         );
+        let plot_roc = Plot::new(rate_of_change).point_style(
+            PointStyle::new()
+                .marker(PointMarker::Circle) // setting the marker to be a circle
+                .colour("#49FF33"),
+        );
         let view = ContinuousView::new()
             .add(plot)
+            .add(plot_roc)
             .y_range(-15., 15.)
             .x_label("seconds")
             .y_label("returns");
